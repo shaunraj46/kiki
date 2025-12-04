@@ -19,15 +19,23 @@
 
     <style>
         :root {
-            --primary-color: #FF6B9D;
-            --secondary-color: #4ECDC4;
-            --accent-color: #FFE66D;
-            --background: #F8F9FA;
-            --text-dark: #2C3E50;
-            --success: #28A745;
-            --danger: #DC3545;
-            --border-radius: 20px;
-            --shadow: 0 10px 30px rgba(0,0,0,0.1);
+            --primary-color: #6C5CE7;
+            --secondary-color: #A29BFE;
+            --accent-color: #FD79A8;
+            --success-color: #00B894;
+            --warning-color: #FDCB6E;
+            --background-light: #FFFFFF;
+            --background-soft: #F8F9FF;
+            --text-primary: #2D3436;
+            --text-secondary: #636E72;
+            --text-light: #B2BEC3;
+            --border-radius-sm: 12px;
+            --border-radius-md: 20px;
+            --border-radius-lg: 28px;
+            --shadow-sm: 0 2px 8px rgba(108, 92, 231, 0.1);
+            --shadow-md: 0 8px 25px rgba(108, 92, 231, 0.15);
+            --shadow-lg: 0 15px 35px rgba(108, 92, 231, 0.2);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         * {
@@ -38,8 +46,8 @@
         }
 
         body {
-            font-family: 'Comic Sans MS', cursive, sans-serif;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             overflow-x: hidden;
             position: relative;
@@ -59,138 +67,226 @@
             position: absolute;
             top: 0;
             left: 0;
-            padding: 20px;
+            padding: 24px;
         }
 
         .view.active {
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-start;
             align-items: center;
+            padding-top: max(env(safe-area-inset-top), 24px);
         }
 
         /* Landing Screen */
+        .landing-header {
+            text-align: center;
+            margin-bottom: 48px;
+            margin-top: 20px;
+        }
+
         .landing-title {
-            font-size: clamp(2rem, 8vw, 4rem);
+            font-size: clamp(28px, 7vw, 48px);
+            font-weight: 800;
             color: white;
             text-align: center;
-            margin-bottom: 2rem;
-            text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .landing-subtitle {
+            font-size: clamp(16px, 4vw, 20px);
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.8);
+            text-align: center;
         }
 
         .kids-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
             width: 100%;
-            max-width: 600px;
-            margin-bottom: 2rem;
+            max-width: 400px;
+            margin-bottom: 40px;
         }
 
         .kid-card {
-            background: white;
-            border-radius: var(--border-radius);
-            padding: 20px;
+            background: var(--background-light);
+            border-radius: var(--border-radius-md);
+            padding: 24px;
             text-align: center;
-            box-shadow: var(--shadow);
+            box-shadow: var(--shadow-md);
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: var(--transition);
             border: none;
             font-family: inherit;
+            position: relative;
+            overflow: hidden;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
-        .kid-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        .kid-card:active {
+            transform: scale(0.98);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .kid-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+        }
+
+        .kid-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            flex: 1;
         }
 
         .kid-avatar {
-            font-size: 4rem;
-            margin-bottom: 10px;
-        }
-
-        .kid-name {
-            font-size: 1.2rem;
-            color: var(--text-dark);
-            font-weight: bold;
-        }
-
-        .parent-lock {
-            background: rgba(255,255,255,0.2);
-            border: 2px solid white;
-            border-radius: 50%;
             width: 60px;
             height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            font-size: 24px;
+            color: white;
+            font-weight: 600;
+            margin-left: 16px;
+            box-shadow: var(--shadow-sm);
         }
 
-        .parent-lock:hover {
-            background: white;
-            color: var(--primary-color);
+        .kid-name {
+            font-size: 20px;
+            color: var(--text-primary);
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .kid-meta {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .parent-lock {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: var(--border-radius-md);
+            width: auto;
+            height: 56px;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .parent-lock:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .parent-lock::before {
+            content: '';
+            width: 16px;
+            height: 16px;
+            background: currentColor;
+            mask: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='currentColor' viewBox='0 0 16 16'%3e%3cpath d='M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zM3 7v4a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1z'/%3e%3c/svg%3e") no-repeat center;
+            mask-size: contain;
+            margin-right: 8px;
         }
 
         /* Parent Dashboard */
         .dashboard {
             width: 100%;
-            max-width: 800px;
-            background: white;
-            border-radius: var(--border-radius);
-            padding: 30px;
-            box-shadow: var(--shadow);
+            max-width: 400px;
+            background: var(--background-light);
+            border-radius: var(--border-radius-lg);
+            padding: 32px 24px;
+            box-shadow: var(--shadow-lg);
+            margin-top: 20px;
         }
 
         .pin-input {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 20px;
+            gap: 32px;
+        }
+
+        .pin-input h2 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-align: center;
+            margin-bottom: 8px;
         }
 
         .pin-display {
             display: flex;
-            gap: 10px;
+            gap: 16px;
+            margin-bottom: 8px;
         }
 
         .pin-dot {
-            width: 20px;
-            height: 20px;
-            border: 2px solid var(--primary-color);
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--text-light);
             border-radius: 50%;
             background: transparent;
-            transition: all 0.3s ease;
+            transition: var(--transition);
         }
 
         .pin-dot.filled {
             background: var(--primary-color);
+            border-color: var(--primary-color);
         }
 
         .pin-keypad {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            max-width: 300px;
+            gap: 16px;
+            width: 100%;
+            max-width: 280px;
         }
 
         .pin-key {
-            aspect-ratio: 1;
+            height: 60px;
             border: none;
-            background: var(--secondary-color);
-            color: white;
-            font-size: 1.5rem;
-            font-weight: bold;
-            border-radius: 15px;
+            background: var(--background-soft);
+            color: var(--text-primary);
+            font-size: 20px;
+            font-weight: 600;
+            border-radius: var(--border-radius-sm);
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
         }
 
-        .pin-key:hover {
-            transform: scale(1.1);
+        .pin-key:active {
+            transform: scale(0.95);
             background: var(--primary-color);
+            color: white;
+        }
+
+        .pin-key[data-key="clear"], .pin-key[data-key="back"] {
+            background: var(--text-light);
+            color: white;
         }
 
         .kid-stats {
@@ -216,7 +312,7 @@
         /* Kid Mode */
         .kid-mode {
             padding: 0;
-            background: black;
+            background: #000;
         }
 
         .camera-container {
@@ -233,19 +329,21 @@
 
         .kiki-mascot {
             position: absolute;
-            top: 20px;
+            top: max(env(safe-area-inset-top), 20px);
             right: 20px;
-            width: 80px;
-            height: 80px;
-            background: var(--accent-color);
+            width: 72px;
+            height: 72px;
+            background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2rem;
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
             z-index: 100;
             border: 3px solid white;
-            box-shadow: var(--shadow);
+            box-shadow: var(--shadow-lg);
         }
 
         .kiki-mascot.listening {
@@ -256,54 +354,80 @@
             animation: bounce 0.5s infinite alternate;
         }
 
+        .kiki-mascot::after {
+            content: 'K';
+        }
+
         @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
+            0%, 100% { transform: scale(1); box-shadow: var(--shadow-lg); }
+            50% { transform: scale(1.05); box-shadow: 0 20px 45px rgba(108, 92, 231, 0.3); }
         }
 
         @keyframes bounce {
             0% { transform: translateY(0); }
-            100% { transform: translateY(-10px); }
+            100% { transform: translateY(-8px); }
         }
 
         .ask-button {
             position: absolute;
-            bottom: 30px;
+            bottom: max(env(safe-area-inset-bottom), 30px);
             left: 50%;
             transform: translateX(-50%);
             background: var(--primary-color);
             color: white;
             border: none;
-            border-radius: 25px;
-            padding: 15px 30px;
-            font-size: 1.2rem;
-            font-weight: bold;
+            border-radius: var(--border-radius-lg);
+            padding: 18px 32px;
+            font-size: 18px;
+            font-weight: 700;
             cursor: pointer;
-            box-shadow: var(--shadow);
-            transition: all 0.3s ease;
+            box-shadow: var(--shadow-lg);
+            transition: var(--transition);
+            backdrop-filter: blur(10px);
         }
 
-        .ask-button:hover {
-            transform: translateX(-50%) translateY(-5px);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        .ask-button:active {
+            transform: translateX(-50%) scale(0.95);
+            box-shadow: var(--shadow-md);
+        }
+
+        .ask-button::before {
+            content: '';
+            width: 20px;
+            height: 20px;
+            background: currentColor;
+            mask: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='currentColor' viewBox='0 0 16 16'%3e%3cpath d='M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z'/%3e%3cpath d='M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286zm1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94z'/%3e%3c/svg%3e") no-repeat center;
+            mask-size: contain;
+            margin-right: 8px;
+            display: inline-block;
         }
 
         .exit-lock {
             position: absolute;
-            top: 20px;
+            top: max(env(safe-area-inset-top), 20px);
             left: 20px;
-            width: 60px;
-            height: 60px;
-            background: rgba(255,255,255,0.2);
-            border: 2px solid white;
-            border-radius: 50%;
+            width: 56px;
+            height: 56px;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: var(--border-radius-md);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
+            color: white;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: var(--transition);
             z-index: 100;
+        }
+
+        .exit-lock::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            background: currentColor;
+            mask: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='currentColor' viewBox='0 0 16 16'%3e%3cpath d='M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zM3 7v4a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1z'/%3e%3c/svg%3e") no-repeat center;
+            mask-size: contain;
         }
 
         .exit-progress {
@@ -413,11 +537,14 @@
     <div class="container">
         <!-- Landing View -->
         <div class="view active" id="landing-view">
-            <h1 class="landing-title">🌟 Kiki the World Explorer 🌟</h1>
+            <div class="landing-header">
+                <h1 class="landing-title">Kiki Explorer</h1>
+                <p class="landing-subtitle">Discover the world together</p>
+            </div>
             <div class="kids-grid" id="kids-grid">
                 <!-- Kids will be populated here -->
             </div>
-            <button class="parent-lock" id="parent-lock" title="Parent Dashboard">🔒</button>
+            <button class="parent-lock" id="parent-lock" title="Parent Dashboard">Parent Settings</button>
         </div>
 
         <!-- Parent Dashboard View -->
@@ -441,9 +568,9 @@
                         <button class="pin-key" data-key="7">7</button>
                         <button class="pin-key" data-key="8">8</button>
                         <button class="pin-key" data-key="9">9</button>
-                        <button class="pin-key" data-key="clear">⌫</button>
+                        <button class="pin-key" data-key="clear">Delete</button>
                         <button class="pin-key" data-key="0">0</button>
-                        <button class="pin-key" data-key="back">↩</button>
+                        <button class="pin-key" data-key="back">Back</button>
                     </div>
                 </div>
                 <div class="kid-stats" id="kid-stats" style="display: none;">
@@ -462,13 +589,12 @@
                 <canvas id="detection-canvas" style="display: none;"></canvas>
 
                 <button class="exit-lock" id="exit-lock">
-                    🔒
                     <div class="exit-progress" id="exit-progress"></div>
                 </button>
 
-                <div class="kiki-mascot" id="kiki-mascot">🤖</div>
+                <div class="kiki-mascot" id="kiki-mascot"></div>
 
-                <button class="ask-button" id="ask-button">✨ Ask Kiki</button>
+                <button class="ask-button" id="ask-button">Ask Kiki</button>
             </div>
         </div>
     </div>
@@ -985,12 +1111,16 @@
 
             promptForAPIKey() {
                 const key = prompt('Enter your OpenAI API key:\n(This will be stored locally in your browser)');
-                if (key) {
+                if (key && key.trim()) {
                     OPENAI_API_KEY = key.trim();
                     localStorage.setItem('kiki-openai-key', OPENAI_API_KEY);
-                    this.connect(this.currentKid);
+                    console.log('API key saved, attempting to connect...');
+                    if (this.currentKid) {
+                        this.connect(this.currentKid);
+                    }
                 } else {
                     this.showStatus('API key is required for voice features');
+                    console.warn('No API key provided');
                 }
             }
 
@@ -1082,8 +1212,16 @@
                 // Kid mode
                 document.getElementById('ask-button').addEventListener('click', () => {
                     console.log('Ask Kiki button clicked');
+                    console.log('Current kid:', this.currentKid);
                     console.log('Voice system connected:', this.voiceSystem.isConnected());
                     console.log('Current API key exists:', !!OPENAI_API_KEY);
+
+                    if (!this.currentKid) {
+                        console.error('No current kid selected');
+                        alert('Please select a child first');
+                        this.router.showView('landing-view');
+                        return;
+                    }
 
                     if (!this.voiceSystem.isConnected()) {
                         console.log('Voice system not connected, attempting to connect...');
@@ -1149,8 +1287,11 @@
                     const card = document.createElement('button');
                     card.className = 'kid-card';
                     card.innerHTML = `
-                        <div class="kid-avatar">${kid.avatar}</div>
-                        <div class="kid-name">${kid.name}</div>
+                        <div class="kid-info">
+                            <div class="kid-name">${kid.name}</div>
+                            <div class="kid-meta">Age ${kid.age} • Level ${kid.level}</div>
+                        </div>
+                        <div class="kid-avatar">${kid.name.charAt(0).toUpperCase()}</div>
                     `;
 
                     card.addEventListener('click', () => {
