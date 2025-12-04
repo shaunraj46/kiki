@@ -734,14 +734,26 @@
 
             async startCamera() {
                 try {
-                    const stream = await navigator.mediaDevices.getUserMedia({
-                        video: {
-                            width: { ideal: 1280 },
-                            height: { ideal: 720 },
-                            facingMode: 'environment'
-                        },
-                        audio: false
-                    });
+                    // Try with basic constraints first, then fallback
+                    let stream;
+                    try {
+                        stream = await navigator.mediaDevices.getUserMedia({
+                            video: {
+                                width: { ideal: 1280 },
+                                height: { ideal: 720 },
+                                facingMode: 'environment'
+                            },
+                            audio: false
+                        });
+                    } catch (error) {
+                        console.log('Fallback: trying basic camera constraints');
+                        stream = await navigator.mediaDevices.getUserMedia({
+                            video: {
+                                facingMode: 'environment'
+                            },
+                            audio: false
+                        });
+                    }
                     this.video.srcObject = stream;
 
                     return new Promise((resolve) => {
@@ -873,7 +885,10 @@
 
                 const wsUrl = 'wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01';
 
+                console.log('Attempting WebSocket connection with API key:', OPENAI_API_KEY.substring(0, 7) + '...');
+
                 try {
+                    // Use correct OpenAI auth format
                     this.ws = new WebSocket(wsUrl, ['openai-insecure-api-key', OPENAI_API_KEY]);
 
                     this.ws.onopen = () => {
@@ -896,6 +911,14 @@
                     this.ws.onerror = (error) => {
                         console.error('WebSocket error:', error);
                         this.connected = false;
+                        this.showStatus('Voice features unavailable - check API key');
+
+                        // Fallback: simulate voice response
+                        setTimeout(() => {
+                            this.showStatus('Demo: Kiki says hello! 👋');
+                            this.setKikiState('talking');
+                            setTimeout(() => this.setKikiState('idle'), 2000);
+                        }, 1000);
                     };
 
                 } catch (error) {
@@ -1130,6 +1153,14 @@
                 status.classList.add('show');
                 setTimeout(() => status.classList.remove('show'), 3000);
             }
+
+            showDebug(message) {
+                const status = document.getElementById('status');
+                status.textContent = `DEBUG: ${message}`;
+                status.style.background = '#007AFF';
+                status.classList.add('show');
+                setTimeout(() => status.classList.remove('show'), 2000);
+            }
         }
 
         // Router for View Management
@@ -1210,26 +1241,55 @@
                 });
 
                 // Kid mode
-                document.getElementById('ask-button').addEventListener('click', () => {
-                    console.log('Ask Kiki button clicked');
-                    console.log('Current kid:', this.currentKid);
-                    console.log('Voice system connected:', this.voiceSystem.isConnected());
-                    console.log('Current API key exists:', !!OPENAI_API_KEY);
+                const askButton = document.getElementById('ask-button');
+                console.log('Setting up ask button listener. Button exists:', !!askButton);
 
-                    if (!this.currentKid) {
-                        console.error('No current kid selected');
-                        alert('Please select a child first');
-                        this.router.showView('landing-view');
-                        return;
-                    }
+                if (askButton) {
+                    askButton.addEventListener('click', () => {
+                        console.log('Ask Kiki button clicked');
+                        this.voiceSystem.showDebug('Ask Kiki clicked!');
 
-                    if (!this.voiceSystem.isConnected()) {
-                        console.log('Voice system not connected, attempting to connect...');
-                        this.voiceSystem.connect(this.currentKid);
-                    } else {
-                        this.voiceSystem.manualInteraction();
+                        if (!this.currentKid) {
+                            this.voiceSystem.showDebug('No kid selected');
+                            alert('Please select a child first');
+                            this.router.showView('landing-view');
+                            return;
+                        }
+
+                        if (!this.voiceSystem.isConnected()) {
+                            this.voiceSystem.showDebug('Connecting to voice...');
+                            this.voiceSystem.connect(this.currentKid);
+                        } else {
+                            this.voiceSystem.showDebug('Voice interaction!');
+                            this.voiceSystem.manualInteraction();
+                        }
+                    });
+                    this.voiceSystem.showDebug('Ask button listener added');
+                } else {
+                    this.voiceSystem.showDebug('Ask button NOT FOUND!');
+                }
+
+                // Test mode: add demo functionality
+                setTimeout(() => {
+                    const askBtn = document.getElementById('ask-button');
+                    if (askBtn && !this.voiceSystem.isConnected()) {
+                        askBtn.addEventListener('click', () => {
+                            this.voiceSystem.showStatus('Demo Mode: Kiki is listening... 🎤');
+                            this.voiceSystem.setKikiState('listening');
+
+                            setTimeout(() => {
+                                this.voiceSystem.showStatus('Demo Mode: Kiki responds! 🗣️');
+                                this.voiceSystem.setKikiState('talking');
+
+                                setTimeout(() => {
+                                    this.voiceSystem.setKikiState('idle');
+                                    this.voiceSystem.showStatus('Connect OpenAI for real voice features');
+                                }, 2000);
+                            }, 2000);
+                        });
                     }
-                });
+                }, 3000);
+                }
 
                 // Exit lock with long press
                 const exitLock = document.getElementById('exit-lock');
@@ -1464,6 +1524,11 @@
         // Initialize the app when DOM is loaded
         document.addEventListener('DOMContentLoaded', () => {
             console.log('DOM loaded, initializing Kiki App...');
+
+            // Check if ask-button exists
+            const askButton = document.getElementById('ask-button');
+            console.log('Ask button found:', !!askButton);
+
             try {
                 const app = new KikiApp();
                 console.log('Kiki App created successfully');
@@ -1484,6 +1549,19 @@
                     console.error('Fallback failed:', error);
                 }
             }
+
+            // Emergency test for ask button
+            setTimeout(() => {
+                const testButton = document.getElementById('ask-button');
+                console.log('Emergency test - ask button exists:', !!testButton);
+                if (testButton) {
+                    console.log('Adding emergency click listener');
+                    testButton.onclick = () => {
+                        console.log('EMERGENCY CLICK DETECTED ON ASK BUTTON');
+                        alert('Ask button is working!');
+                    };
+                }
+            }, 2000);
         });
 
         // Handle orientation changes
