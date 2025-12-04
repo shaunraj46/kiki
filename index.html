@@ -680,6 +680,7 @@
             }
 
             getKids() {
+                console.log('Store.getKids() called, returning:', this.data.kids);
                 return this.data.kids;
             }
 
@@ -1219,6 +1220,12 @@
                 this.setupPWA();
 
                 console.log('Kiki Explorer initialized successfully');
+
+                // Force render kids with delay to ensure DOM is ready
+                setTimeout(() => {
+                    console.log('Force rendering kids after delay...');
+                    this.renderKids();
+                }, 1000);
             }
 
             setupEventListeners() {
@@ -1340,10 +1347,21 @@
             }
 
             renderKids() {
+                console.log('Rendering kids...');
                 const grid = document.getElementById('kids-grid');
+                console.log('Kids grid element found:', !!grid);
+
+                if (!grid) {
+                    console.error('Kids grid element not found!');
+                    return;
+                }
+
                 grid.innerHTML = '';
 
-                this.store.getKids().forEach(kid => {
+                const kids = this.store.getKids();
+                console.log('Kids data:', kids);
+
+                kids.forEach(kid => {
                     const card = document.createElement('button');
                     card.className = 'kid-card';
                     card.innerHTML = `
