@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#FF6B9D">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Kiki Explorer">
+
+    <title>Kiki the World Explorer</title>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" id="manifest-placeholder">
+
+    <!-- External Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@latest"></script>
+
+    <style>
+        :root {
+            --primary-color: #FF6B9D;
+            --secondary-color: #4ECDC4;
+            --accent-color: #FFE66D;
+            --background: #F8F9FA;
+            --text-dark: #2C3E50;
+            --success: #28A745;
+            --danger: #DC3545;
+            --border-radius: 20px;
+            --shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .container {
+            max-width: 100vw;
+            min-height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .view {
+            display: none;
+            width: 100%;
+            min-height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            padding: 20px;
+        }
+
+        .view.active {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Landing Screen */
+        .landing-title {
+            font-size: clamp(2rem, 8vw, 4rem);
+            color: white;
+            text-align: center;
+            margin-bottom: 2rem;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+        }
+
+        .kids-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 2rem;
+        }
+
+        .kid-card {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            font-family: inherit;
+        }
+
+        .kid-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+
+        .kid-avatar {
+            font-size: 4rem;
+            margin-bottom: 10px;
+        }
+
+        .kid-name {
+            font-size: 1.2rem;
+            color: var(--text-dark);
+            font-weight: bold;
+        }
+
+        .parent-lock {
+            background: rgba(255,255,255,0.2);
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .parent-lock:hover {
+            background: white;
+            color: var(--primary-color);
+        }
+
+        /* Parent Dashboard */
+        .dashboard {
+            width: 100%;
+            max-width: 800px;
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 30px;
+            box-shadow: var(--shadow);
+        }
+
+        .pin-input {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .pin-display {
+            display: flex;
+            gap: 10px;
+        }
+
+        .pin-dot {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--primary-color);
+            border-radius: 50%;
+            background: transparent;
+            transition: all 0.3s ease;
+        }
+
+        .pin-dot.filled {
+            background: var(--primary-color);
+        }
+
+        .pin-keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            max-width: 300px;
+        }
+
+        .pin-key {
+            aspect-ratio: 1;
+            border: none;
+            background: var(--secondary-color);
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .pin-key:hover {
+            transform: scale(1.1);
+            background: var(--primary-color);
+        }
+
+        .kid-stats {
+            margin-top: 20px;
+        }
+
+        .kid-stat {
+            background: var(--background);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .learned-word {
+            display: inline-block;
+            background: var(--accent-color);
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin: 5px;
+            font-size: 0.9rem;
+        }
+
+        /* Kid Mode */
+        .kid-mode {
+            padding: 0;
+            background: black;
+        }
+
+        .camera-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+        }
+
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .kiki-mascot {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 80px;
+            height: 80px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            z-index: 100;
+            border: 3px solid white;
+            box-shadow: var(--shadow);
+        }
+
+        .kiki-mascot.listening {
+            animation: pulse 2s infinite;
+        }
+
+        .kiki-mascot.talking {
+            animation: bounce 0.5s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        @keyframes bounce {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-10px); }
+        }
+
+        .ask-button {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+        }
+
+        .ask-button:hover {
+            transform: translateX(-50%) translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        }
+
+        .exit-lock {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 60px;
+            height: 60px;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .exit-progress {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 80%;
+            border: 3px solid transparent;
+            border-radius: 50%;
+            transition: all 0.1s ease;
+        }
+
+        .exit-progress.active {
+            border-top-color: white;
+            animation: spin 3s linear;
+        }
+
+        @keyframes spin {
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        /* Status Messages */
+        .status {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px 30px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            font-size: 1.2rem;
+            color: var(--text-dark);
+            z-index: 1000;
+            display: none;
+        }
+
+        .status.show {
+            display: block;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .view {
+                padding: 10px;
+            }
+
+            .landing-title {
+                margin-bottom: 1rem;
+            }
+
+            .kids-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+            }
+
+            .dashboard {
+                padding: 20px;
+            }
+        }
+
+        @media (orientation: landscape) and (max-height: 500px) {
+            .landing-title {
+                font-size: 2rem;
+                margin-bottom: 1rem;
+            }
+
+            .kids-grid {
+                max-width: 400px;
+            }
+        }
+
+        /* PWA Install */
+        .install-prompt {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: var(--primary-color);
+            color: white;
+            padding: 15px;
+            border-radius: 15px;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 1001;
+        }
+
+        .install-prompt.show {
+            display: flex;
+        }
+
+        .install-prompt button {
+            background: white;
+            color: var(--primary-color);
+            border: none;
+            padding: 8px 15px;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Landing View -->
+        <div class="view active" id="landing-view">
+            <h1 class="landing-title">🌟 Kiki the World Explorer 🌟</h1>
+            <div class="kids-grid" id="kids-grid">
+                <!-- Kids will be populated here -->
+            </div>
+            <button class="parent-lock" id="parent-lock" title="Parent Dashboard">🔒</button>
+        </div>
+
+        <!-- Parent Dashboard View -->
+        <div class="view" id="parent-view">
+            <div class="dashboard">
+                <div class="pin-input" id="pin-input">
+                    <h2>Enter Parent PIN</h2>
+                    <div class="pin-display">
+                        <div class="pin-dot" data-index="0"></div>
+                        <div class="pin-dot" data-index="1"></div>
+                        <div class="pin-dot" data-index="2"></div>
+                        <div class="pin-dot" data-index="3"></div>
+                    </div>
+                    <div class="pin-keypad">
+                        <button class="pin-key" data-key="1">1</button>
+                        <button class="pin-key" data-key="2">2</button>
+                        <button class="pin-key" data-key="3">3</button>
+                        <button class="pin-key" data-key="4">4</button>
+                        <button class="pin-key" data-key="5">5</button>
+                        <button class="pin-key" data-key="6">6</button>
+                        <button class="pin-key" data-key="7">7</button>
+                        <button class="pin-key" data-key="8">8</button>
+                        <button class="pin-key" data-key="9">9</button>
+                        <button class="pin-key" data-key="clear">⌫</button>
+                        <button class="pin-key" data-key="0">0</button>
+                        <button class="pin-key" data-key="back">↩</button>
+                    </div>
+                </div>
+                <div class="kid-stats" id="kid-stats" style="display: none;">
+                    <h2>Kids Progress</h2>
+                    <div id="stats-content"></div>
+                    <button class="pin-key" id="reset-data" style="margin-top: 20px; background: var(--danger);">Reset All Data</button>
+                    <button class="pin-key" id="back-to-landing" style="margin-top: 10px;">← Back to Home</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kid Mode View -->
+        <div class="view kid-mode" id="kid-view">
+            <div class="camera-container">
+                <video id="video" autoplay muted playsinline></video>
+                <canvas id="detection-canvas" style="display: none;"></canvas>
+
+                <button class="exit-lock" id="exit-lock">
+                    🔒
+                    <div class="exit-progress" id="exit-progress"></div>
+                </button>
+
+                <div class="kiki-mascot" id="kiki-mascot">🤖</div>
+
+                <button class="ask-button" id="ask-button">✨ Ask Kiki</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Messages -->
+    <div class="status" id="status"></div>
+
+    <!-- PWA Install Prompt -->
+    <div class="install-prompt" id="install-prompt">
+        <span>📱 Install Kiki Explorer for the best experience!</span>
+        <button id="install-button">Install</button>
+        <button id="dismiss-install">✕</button>
+    </div>
+
+    <script>
+        // Basic test - this should appear immediately in console
+        console.log('🚀 JavaScript is running! Kiki Explorer starting...');
+
+        // Configuration
+        let OPENAI_API_KEY = localStorage.getItem('kiki-openai-key') || null;
+        const DETECTION_CONFIDENCE = 0.6;
+        const DETECTION_DURATION = 3000;
+        const DETECTION_COOLDOWN = 60000;
+
+        // Audio Processing Functions
+        function floatTo16BitPCM(output, offset, input) {
+            for (let i = 0; i < input.length; i++, offset += 2) {
+                const s = Math.max(-1, Math.min(1, input[i]));
+                output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+            }
+        }
+
+        function base64Encode(buffer) {
+            let binary = '';
+            const bytes = new Uint8Array(buffer);
+            const len = bytes.byteLength;
+            for (let i = 0; i < len; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return window.btoa(binary);
+        }
+
+        // Store Class for localStorage Management
+        class Store {
+            constructor() {
+                this.storageKey = 'kiki-explorer-data';
+                this.initializeData();
+            }
+
+            initializeData() {
+                const stored = localStorage.getItem(this.storageKey);
+                if (!stored) {
+                    const seedData = {
+                        parentPin: "1234",
+                        kids: [
+                            {
+                                id: 1,
+                                name: "Leo",
+                                age: 5,
+                                avatar: "🦁",
+                                level: 1,
+                                learnedWords: []
+                            },
+                            {
+                                id: 2,
+                                name: "Mia",
+                                age: 9,
+                                avatar: "🦄",
+                                level: 2,
+                                learnedWords: []
+                            }
+                        ]
+                    };
+                    localStorage.setItem(this.storageKey, JSON.stringify(seedData));
+                    this.data = seedData;
+                } else {
+                    this.data = JSON.parse(stored);
+                }
+            }
+
+            save() {
+                localStorage.setItem(this.storageKey, JSON.stringify(this.data));
+            }
+
+            getKids() {
+                return this.data.kids;
+            }
+
+            checkPin(input) {
+                return input === this.data.parentPin;
+            }
+
+            addLearnedWord(kidId, word) {
+                const kid = this.data.kids.find(k => k.id === kidId);
+                if (kid) {
+                    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    kid.learnedWords.push({ word, timestamp });
+                    this.save();
+                }
+            }
+
+            resetData() {
+                localStorage.removeItem(this.storageKey);
+                this.initializeData();
+            }
+
+            getKid(id) {
+                return this.data.kids.find(k => k.id === id);
+            }
+        }
+
+        // AI Core - Vision System
+        class VisionSystem {
+            constructor(store, voiceSystem) {
+                this.store = store;
+                this.voiceSystem = voiceSystem;
+                this.model = null;
+                this.video = document.getElementById('video');
+                this.canvas = document.getElementById('detection-canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.isDetecting = false;
+                this.detectionHistory = new Map();
+                this.cooldowns = new Map();
+                this.currentKidId = null;
+            }
+
+            async initialize() {
+                try {
+                    this.model = await cocoSsd.load();
+                    console.log('COCO-SSD model loaded successfully');
+                    return true;
+                } catch (error) {
+                    console.error('Failed to load COCO-SSD model:', error);
+                    return false;
+                }
+            }
+
+            async startCamera() {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 },
+                            facingMode: 'environment'
+                        },
+                        audio: false
+                    });
+                    this.video.srcObject = stream;
+
+                    return new Promise((resolve) => {
+                        this.video.onloadedmetadata = () => {
+                            this.canvas.width = this.video.videoWidth;
+                            this.canvas.height = this.video.videoHeight;
+                            resolve(true);
+                        };
+                    });
+                } catch (error) {
+                    console.error('Failed to access camera:', error);
+                    return false;
+                }
+            }
+
+            stopCamera() {
+                if (this.video.srcObject) {
+                    this.video.srcObject.getTracks().forEach(track => track.stop());
+                    this.video.srcObject = null;
+                }
+                this.isDetecting = false;
+            }
+
+            startDetection(kidId) {
+                this.currentKidId = kidId;
+                this.isDetecting = true;
+                this.detectLoop();
+            }
+
+            stopDetection() {
+                this.isDetecting = false;
+                this.currentKidId = null;
+                this.detectionHistory.clear();
+            }
+
+            async detectLoop() {
+                if (!this.isDetecting || !this.model) return;
+
+                try {
+                    const predictions = await this.model.detect(this.video);
+                    this.processPredictions(predictions);
+                } catch (error) {
+                    console.error('Detection error:', error);
+                }
+
+                if (this.isDetecting) {
+                    requestAnimationFrame(() => this.detectLoop());
+                }
+            }
+
+            processPredictions(predictions) {
+                const now = Date.now();
+
+                predictions.forEach(prediction => {
+                    const { class: className, score } = prediction;
+
+                    if (score > DETECTION_CONFIDENCE) {
+                        if (!this.detectionHistory.has(className)) {
+                            this.detectionHistory.set(className, []);
+                        }
+
+                        const history = this.detectionHistory.get(className);
+                        history.push(now);
+
+                        // Keep only recent detections
+                        this.detectionHistory.set(className,
+                            history.filter(time => now - time <= DETECTION_DURATION)
+                        );
+
+                        // Check if object detected consistently
+                        if (history.length >= 3 &&
+                            (now - history[0]) >= DETECTION_DURATION &&
+                            (!this.cooldowns.has(className) ||
+                             now - this.cooldowns.get(className) >= DETECTION_COOLDOWN)) {
+
+                            this.onObjectFound(className);
+                            this.cooldowns.set(className, now);
+                        }
+                    }
+                });
+            }
+
+            onObjectFound(objectName) {
+                if (this.currentKidId && this.voiceSystem.isConnected()) {
+                    console.log('Object detected:', objectName);
+                    this.store.addLearnedWord(this.currentKidId, objectName);
+
+                    const message = `Look! The user found a ${objectName}. Briefly explain it.`;
+                    this.voiceSystem.sendTextMessage(message);
+
+                    // Clear detection history for this object
+                    this.detectionHistory.delete(objectName);
+                }
+            }
+        }
+
+        // AI Core - Voice System
+        class VoiceSystem {
+            constructor() {
+                this.ws = null;
+                this.audioContext = null;
+                this.microphone = null;
+                this.processor = null;
+                this.audioQueue = [];
+                this.isPlaying = false;
+                this.connected = false;
+                this.currentKid = null;
+            }
+
+            async initialize() {
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)({
+                        sampleRate: 24000
+                    });
+                    return true;
+                } catch (error) {
+                    console.error('Failed to initialize audio context:', error);
+                    return false;
+                }
+            }
+
+            connect(kid) {
+                this.currentKid = kid;
+
+                if (!OPENAI_API_KEY) {
+                    this.promptForAPIKey();
+                    return;
+                }
+
+                const wsUrl = 'wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01';
+
+                try {
+                    this.ws = new WebSocket(wsUrl, ['openai-insecure-api-key', OPENAI_API_KEY]);
+
+                    this.ws.onopen = () => {
+                        console.log('WebSocket connected');
+                        this.connected = true;
+                        this.setupSession();
+                        this.startMicrophone();
+                    };
+
+                    this.ws.onmessage = (event) => {
+                        this.handleMessage(JSON.parse(event.data));
+                    };
+
+                    this.ws.onclose = () => {
+                        console.log('WebSocket disconnected');
+                        this.connected = false;
+                        this.stopMicrophone();
+                    };
+
+                    this.ws.onerror = (error) => {
+                        console.error('WebSocket error:', error);
+                        this.connected = false;
+                    };
+
+                } catch (error) {
+                    console.error('Failed to connect to OpenAI:', error);
+                }
+            }
+
+            setupSession() {
+                const systemPrompt = this.currentKid.level === 1
+                    ? "You are Kiki, a magical guide for kids. You speak in a warm, encouraging voice. Speak simply for young children. CRITICAL SAFETY: If the user mentions monsters, blood, violence, or weapons, immediately stop and say 'Das ist ein Fall für deine Eltern!'."
+                    : "You are Kiki, a magical guide for kids. You speak in a warm, encouraging voice. For older children, explain science concepts. CRITICAL SAFETY: If the user mentions monsters, blood, violence, or weapons, immediately stop and say 'Das ist ein Fall für deine Eltern!'.";
+
+                this.sendMessage({
+                    type: 'session.update',
+                    session: {
+                        modalities: ['text', 'audio'],
+                        instructions: systemPrompt,
+                        voice: 'alloy',
+                        input_audio_format: 'pcm16',
+                        output_audio_format: 'pcm16',
+                        input_audio_transcription: {
+                            model: 'whisper-1'
+                        }
+                    }
+                });
+            }
+
+            async startMicrophone() {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        audio: {
+                            sampleRate: 24000,
+                            channelCount: 1,
+                            echoCancellation: true,
+                            noiseSuppression: true
+                        }
+                    });
+
+                    this.microphone = this.audioContext.createMediaStreamSource(stream);
+                    this.processor = this.audioContext.createScriptProcessor(4096, 1, 1);
+
+                    this.processor.onaudioprocess = (event) => {
+                        if (this.connected) {
+                            const inputBuffer = event.inputBuffer.getChannelData(0);
+                            const outputBuffer = new ArrayBuffer(inputBuffer.length * 2);
+                            floatTo16BitPCM(new DataView(outputBuffer), 0, inputBuffer);
+                            const base64Audio = base64Encode(outputBuffer);
+
+                            this.sendMessage({
+                                type: 'input_audio_buffer.append',
+                                audio: base64Audio
+                            });
+                        }
+                    };
+
+                    this.microphone.connect(this.processor);
+                    this.processor.connect(this.audioContext.destination);
+
+                } catch (error) {
+                    console.error('Failed to start microphone:', error);
+                }
+            }
+
+            stopMicrophone() {
+                if (this.processor) {
+                    this.processor.disconnect();
+                    this.processor = null;
+                }
+                if (this.microphone) {
+                    this.microphone.disconnect();
+                    this.microphone = null;
+                }
+            }
+
+            handleMessage(message) {
+                switch (message.type) {
+                    case 'response.audio.delta':
+                        this.handleAudioDelta(message.delta);
+                        break;
+                    case 'input_audio_buffer.speech_started':
+                        this.clearAudioQueue();
+                        this.setKikiState('listening');
+                        break;
+                    case 'response.done':
+                        this.setKikiState('idle');
+                        break;
+                    case 'response.audio.done':
+                        this.setKikiState('idle');
+                        break;
+                    default:
+                        console.log('Unhandled message type:', message.type);
+                }
+            }
+
+            handleAudioDelta(base64Audio) {
+                try {
+                    const audioBuffer = this.base64ToArrayBuffer(base64Audio);
+                    const int16Array = new Int16Array(audioBuffer);
+                    const float32Array = new Float32Array(int16Array.length);
+
+                    for (let i = 0; i < int16Array.length; i++) {
+                        float32Array[i] = int16Array[i] / 0x7FFF;
+                    }
+
+                    this.audioQueue.push(float32Array);
+
+                    if (!this.isPlaying) {
+                        this.playAudioQueue();
+                        this.setKikiState('talking');
+                    }
+                } catch (error) {
+                    console.error('Error processing audio delta:', error);
+                }
+            }
+
+            async playAudioQueue() {
+                if (this.audioQueue.length === 0 || this.isPlaying) return;
+
+                this.isPlaying = true;
+
+                while (this.audioQueue.length > 0) {
+                    const audioData = this.audioQueue.shift();
+                    await this.playAudioChunk(audioData);
+                }
+
+                this.isPlaying = false;
+                this.setKikiState('idle');
+            }
+
+            playAudioChunk(audioData) {
+                return new Promise((resolve) => {
+                    const audioBuffer = this.audioContext.createBuffer(1, audioData.length, 24000);
+                    audioBuffer.getChannelData(0).set(audioData);
+
+                    const source = this.audioContext.createBufferSource();
+                    source.buffer = audioBuffer;
+                    source.connect(this.audioContext.destination);
+
+                    source.onended = resolve;
+                    source.start();
+                });
+            }
+
+            clearAudioQueue() {
+                this.audioQueue = [];
+                this.isPlaying = false;
+            }
+
+            base64ToArrayBuffer(base64) {
+                const binaryString = window.atob(base64);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                return bytes.buffer;
+            }
+
+            sendMessage(message) {
+                if (this.connected && this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(JSON.stringify(message));
+                }
+            }
+
+            sendTextMessage(text) {
+                this.sendMessage({
+                    type: 'conversation.item.create',
+                    item: {
+                        type: 'message',
+                        role: 'user',
+                        content: [{ type: 'input_text', text }]
+                    }
+                });
+
+                this.sendMessage({ type: 'response.create' });
+            }
+
+            manualInteraction() {
+                console.log('Manual interaction triggered');
+                console.log('Voice system connected:', this.connected);
+
+                if (this.connected) {
+                    console.log('Sending audio buffer commit and response create');
+                    this.sendMessage({ type: 'input_audio_buffer.commit' });
+                    this.sendMessage({ type: 'response.create' });
+                } else {
+                    console.warn('Cannot interact: voice system not connected');
+                }
+            }
+
+            setKikiState(state) {
+                const kiki = document.getElementById('kiki-mascot');
+                kiki.className = 'kiki-mascot';
+                if (state === 'listening') {
+                    kiki.classList.add('listening');
+                } else if (state === 'talking') {
+                    kiki.classList.add('talking');
+                }
+            }
+
+            disconnect() {
+                if (this.ws) {
+                    this.ws.close();
+                    this.ws = null;
+                }
+                this.connected = false;
+                this.stopMicrophone();
+                this.clearAudioQueue();
+            }
+
+            isConnected() {
+                return this.connected;
+            }
+
+            promptForAPIKey() {
+                const key = prompt('Enter your OpenAI API key:\n(This will be stored locally in your browser)');
+                if (key) {
+                    OPENAI_API_KEY = key.trim();
+                    localStorage.setItem('kiki-openai-key', OPENAI_API_KEY);
+                    this.connect(this.currentKid);
+                } else {
+                    this.showStatus('API key is required for voice features');
+                }
+            }
+
+            showStatus(message) {
+                const status = document.getElementById('status');
+                status.textContent = message;
+                status.classList.add('show');
+                setTimeout(() => status.classList.remove('show'), 3000);
+            }
+        }
+
+        // Router for View Management
+        class Router {
+            constructor() {
+                this.currentView = 'landing-view';
+            }
+
+            showView(viewId) {
+                console.log('Showing view:', viewId);
+                document.querySelectorAll('.view').forEach(view => {
+                    view.classList.remove('active');
+                });
+
+                const targetView = document.getElementById(viewId);
+                if (targetView) {
+                    targetView.classList.add('active');
+                    this.currentView = viewId;
+                    console.log('Successfully showed view:', viewId);
+                } else {
+                    console.error('View not found:', viewId);
+                }
+            }
+
+            getCurrentView() {
+                return this.currentView;
+            }
+        }
+
+        // Main Application
+        class KikiApp {
+            constructor() {
+                this.store = new Store();
+                this.router = new Router();
+                this.voiceSystem = new VoiceSystem();
+                this.visionSystem = new VisionSystem(this.store, this.voiceSystem);
+                this.currentPin = '';
+                this.exitTimer = null;
+                this.currentKid = null;
+
+                this.initialize();
+            }
+
+            async initialize() {
+                // Initialize AI systems
+                const voiceReady = await this.voiceSystem.initialize();
+                const visionReady = await this.visionSystem.initialize();
+
+                if (!voiceReady || !visionReady) {
+                    console.warn('Some AI systems failed to initialize');
+                }
+
+                // Setup UI
+                this.setupEventListeners();
+                this.renderKids();
+                this.setupPWA();
+
+                console.log('Kiki Explorer initialized successfully');
+            }
+
+            setupEventListeners() {
+                // Landing screen
+                const parentLock = document.getElementById('parent-lock');
+                if (parentLock) {
+                    parentLock.addEventListener('click', () => {
+                        console.log('Parent lock clicked');
+                        this.router.showView('parent-view');
+                    });
+                } else {
+                    console.error('Parent lock element not found!');
+                }
+
+                // PIN input
+                document.querySelectorAll('.pin-key').forEach(key => {
+                    key.addEventListener('click', (e) => {
+                        this.handlePinInput(e.target.dataset.key);
+                    });
+                });
+
+                // Kid mode
+                document.getElementById('ask-button').addEventListener('click', () => {
+                    console.log('Ask Kiki button clicked');
+                    console.log('Voice system connected:', this.voiceSystem.isConnected());
+                    console.log('Current API key exists:', !!OPENAI_API_KEY);
+
+                    if (!this.voiceSystem.isConnected()) {
+                        console.log('Voice system not connected, attempting to connect...');
+                        this.voiceSystem.connect(this.currentKid);
+                    } else {
+                        this.voiceSystem.manualInteraction();
+                    }
+                });
+
+                // Exit lock with long press
+                const exitLock = document.getElementById('exit-lock');
+                let pressTimer = null;
+
+                const startExit = () => {
+                    const progress = document.getElementById('exit-progress');
+                    progress.classList.add('active');
+
+                    pressTimer = setTimeout(() => {
+                        this.exitKidMode();
+                    }, 3000);
+                };
+
+                const cancelExit = () => {
+                    if (pressTimer) {
+                        clearTimeout(pressTimer);
+                        pressTimer = null;
+                    }
+                    document.getElementById('exit-progress').classList.remove('active');
+                };
+
+                exitLock.addEventListener('mousedown', startExit);
+                exitLock.addEventListener('touchstart', startExit);
+                exitLock.addEventListener('mouseup', cancelExit);
+                exitLock.addEventListener('mouseleave', cancelExit);
+                exitLock.addEventListener('touchend', cancelExit);
+                exitLock.addEventListener('touchcancel', cancelExit);
+
+                // Reset data
+                document.getElementById('reset-data').addEventListener('click', () => {
+                    if (confirm('Are you sure you want to reset all data? This cannot be undone.')) {
+                        this.store.resetData();
+                        localStorage.removeItem('kiki-openai-key');
+                        OPENAI_API_KEY = null;
+                        this.renderKids();
+                        this.renderStats();
+                        alert('All data has been reset');
+                    }
+                });
+
+                // Back to landing
+                document.getElementById('back-to-landing').addEventListener('click', () => {
+                    this.router.showView('landing-view');
+                    this.currentPin = '';
+                    this.resetPinDisplay();
+                });
+            }
+
+            renderKids() {
+                const grid = document.getElementById('kids-grid');
+                grid.innerHTML = '';
+
+                this.store.getKids().forEach(kid => {
+                    const card = document.createElement('button');
+                    card.className = 'kid-card';
+                    card.innerHTML = `
+                        <div class="kid-avatar">${kid.avatar}</div>
+                        <div class="kid-name">${kid.name}</div>
+                    `;
+
+                    card.addEventListener('click', () => {
+                        this.enterKidMode(kid);
+                    });
+
+                    grid.appendChild(card);
+                });
+            }
+
+            handlePinInput(key) {
+                if (key === 'clear') {
+                    this.currentPin = this.currentPin.slice(0, -1);
+                } else if (key === 'back') {
+                    this.router.showView('landing-view');
+                    this.currentPin = '';
+                } else if (key && this.currentPin.length < 4) {
+                    this.currentPin += key;
+                }
+
+                this.updatePinDisplay();
+
+                if (this.currentPin.length === 4) {
+                    if (this.store.checkPin(this.currentPin)) {
+                        this.showParentDashboard();
+                    } else {
+                        alert('Incorrect PIN');
+                        this.currentPin = '';
+                        this.updatePinDisplay();
+                    }
+                }
+            }
+
+            updatePinDisplay() {
+                document.querySelectorAll('.pin-dot').forEach((dot, index) => {
+                    dot.classList.toggle('filled', index < this.currentPin.length);
+                });
+            }
+
+            resetPinDisplay() {
+                document.querySelectorAll('.pin-dot').forEach(dot => {
+                    dot.classList.remove('filled');
+                });
+                document.getElementById('pin-input').style.display = 'flex';
+                document.getElementById('kid-stats').style.display = 'none';
+            }
+
+            showParentDashboard() {
+                document.getElementById('pin-input').style.display = 'none';
+                document.getElementById('kid-stats').style.display = 'block';
+                this.renderStats();
+            }
+
+            renderStats() {
+                const content = document.getElementById('stats-content');
+                content.innerHTML = '';
+
+                this.store.getKids().forEach(kid => {
+                    const statDiv = document.createElement('div');
+                    statDiv.className = 'kid-stat';
+
+                    const wordsHtml = kid.learnedWords.map(word =>
+                        `<span class="learned-word">${word.word} (${word.timestamp})</span>`
+                    ).join('');
+
+                    statDiv.innerHTML = `
+                        <h3>${kid.avatar} ${kid.name} (Age ${kid.age}, Level ${kid.level})</h3>
+                        <p><strong>Words learned:</strong> ${kid.learnedWords.length}</p>
+                        <div>${wordsHtml || '<em>No words learned yet</em>'}</div>
+                    `;
+
+                    content.appendChild(statDiv);
+                });
+            }
+
+            async enterKidMode(kid) {
+                this.currentKid = kid;
+                this.router.showView('kid-view');
+
+                // Start camera and AI systems
+                const cameraReady = await this.visionSystem.startCamera();
+                if (!cameraReady) {
+                    alert('Camera access failed');
+                    this.router.showView('landing-view');
+                    return;
+                }
+
+                this.visionSystem.startDetection(kid.id);
+                this.voiceSystem.connect(kid);
+            }
+
+            exitKidMode() {
+                this.visionSystem.stopCamera();
+                this.visionSystem.stopDetection();
+                this.voiceSystem.disconnect();
+
+                this.currentKid = null;
+                this.router.showView('landing-view');
+            }
+
+            setupPWA() {
+                // Generate manifest
+                const manifest = {
+                    name: "Kiki the World Explorer",
+                    short_name: "Kiki Explorer",
+                    description: "Voice-enabled educational app for kids",
+                    start_url: "./",
+                    display: "standalone",
+                    background_color: "#FF6B9D",
+                    theme_color: "#FF6B9D",
+                    orientation: "any",
+                    icons: [
+                        {
+                            src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%23FF6B9D'/%3E%3Ctext x='50' y='60' text-anchor='middle' font-size='40'%3E🤖%3C/text%3E%3C/svg%3E",
+                            sizes: "192x192",
+                            type: "image/svg+xml"
+                        }
+                    ]
+                };
+
+                const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+                const manifestURL = URL.createObjectURL(manifestBlob);
+                document.getElementById('manifest-placeholder').href = manifestURL;
+
+                // Install prompt
+                let deferredPrompt;
+
+                window.addEventListener('beforeinstallprompt', (e) => {
+                    e.preventDefault();
+                    deferredPrompt = e;
+                    document.getElementById('install-prompt').classList.add('show');
+                });
+
+                document.getElementById('install-button').addEventListener('click', () => {
+                    if (deferredPrompt) {
+                        deferredPrompt.prompt();
+                        deferredPrompt.userChoice.then((choiceResult) => {
+                            document.getElementById('install-prompt').classList.remove('show');
+                            deferredPrompt = null;
+                        });
+                    }
+                });
+
+                document.getElementById('dismiss-install').addEventListener('click', () => {
+                    document.getElementById('install-prompt').classList.remove('show');
+                });
+
+                // Register service worker (inline)
+                if ('serviceWorker' in navigator) {
+                    const swCode = `
+                        const CACHE_NAME = 'kiki-explorer-v1';
+                        const urlsToCache = ['./', 'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest', 'https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@latest'];
+
+                        self.addEventListener('install', (event) => {
+                            event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache)));
+                        });
+
+                        self.addEventListener('fetch', (event) => {
+                            event.respondWith(caches.match(event.request).then((response) => response || fetch(event.request)));
+                        });
+                    `;
+
+                    const swBlob = new Blob([swCode], { type: 'application/javascript' });
+                    const swURL = URL.createObjectURL(swBlob);
+                    navigator.serviceWorker.register(swURL);
+                }
+            }
+        }
+
+        // Initialize the app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded, initializing Kiki App...');
+            try {
+                const app = new KikiApp();
+                console.log('Kiki App created successfully');
+                window.kikiApp = app; // Make it globally accessible for debugging
+            } catch (error) {
+                console.error('Failed to initialize Kiki App:', error);
+            }
+        });
+
+        // Fallback initialization
+        window.addEventListener('load', () => {
+            console.log('Window loaded event fired');
+            if (!window.kikiApp) {
+                console.log('Fallback: Creating Kiki App...');
+                try {
+                    window.kikiApp = new KikiApp();
+                } catch (error) {
+                    console.error('Fallback failed:', error);
+                }
+            }
+        });
+
+        // Handle orientation changes
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                if (window.innerHeight < window.innerWidth && window.innerHeight < 500) {
+                    document.body.classList.add('landscape-mode');
+                } else {
+                    document.body.classList.remove('landscape-mode');
+                }
+            }, 100);
+        });
+    </script>
+</body>
+</html>
