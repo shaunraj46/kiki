@@ -1296,35 +1296,6 @@
                         });
                     }
                 }, 3000);
-                }
-
-                // Exit lock with long press
-                const exitLock = document.getElementById('exit-lock');
-                let pressTimer = null;
-
-                const startExit = () => {
-                    const progress = document.getElementById('exit-progress');
-                    progress.classList.add('active');
-
-                    pressTimer = setTimeout(() => {
-                        this.exitKidMode();
-                    }, 3000);
-                };
-
-                const cancelExit = () => {
-                    if (pressTimer) {
-                        clearTimeout(pressTimer);
-                        pressTimer = null;
-                    }
-                    document.getElementById('exit-progress').classList.remove('active');
-                };
-
-                exitLock.addEventListener('mousedown', startExit);
-                exitLock.addEventListener('touchstart', startExit);
-                exitLock.addEventListener('mouseup', cancelExit);
-                exitLock.addEventListener('mouseleave', cancelExit);
-                exitLock.addEventListener('touchend', cancelExit);
-                exitLock.addEventListener('touchcancel', cancelExit);
 
                 // Reset data
                 document.getElementById('reset-data').addEventListener('click', () => {
@@ -1344,6 +1315,37 @@
                     this.currentPin = '';
                     this.resetPinDisplay();
                 });
+
+                // Exit lock with long press
+                const exitLock = document.getElementById('exit-lock');
+                if (exitLock) {
+                    let pressTimer = null;
+
+                    const startExit = () => {
+                        const progress = document.getElementById('exit-progress');
+                        if (progress) progress.classList.add('active');
+
+                        pressTimer = setTimeout(() => {
+                            this.exitKidMode();
+                        }, 3000);
+                    };
+
+                    const cancelExit = () => {
+                        if (pressTimer) {
+                            clearTimeout(pressTimer);
+                            pressTimer = null;
+                        }
+                        const progress = document.getElementById('exit-progress');
+                        if (progress) progress.classList.remove('active');
+                    };
+
+                    exitLock.addEventListener('mousedown', startExit);
+                    exitLock.addEventListener('touchstart', startExit);
+                    exitLock.addEventListener('mouseup', cancelExit);
+                    exitLock.addEventListener('mouseleave', cancelExit);
+                    exitLock.addEventListener('touchend', cancelExit);
+                    exitLock.addEventListener('touchcancel', cancelExit);
+                }
             }
 
             renderKids() {
